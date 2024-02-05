@@ -5,7 +5,9 @@ const mongoose = require('mongoose');
 const app=express()
 const port = process.env.PORT || 3000
 
+//Import all routes
 const category=require('./routes/category')
+const subCategory=require('./routes/subCategory')
 
 app.use(cors())
 app.use(express.json())
@@ -18,6 +20,7 @@ dbConnection().catch(err=>console.log(err))
 
 
 app.use('/category',category)
+app.use('/sub-cat',subCategory)
 
 app.get('/',(req,res)=>{
     res.send('Hello...Welcome')
