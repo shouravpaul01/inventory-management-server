@@ -1,18 +1,21 @@
-const  mongoose= require("mongoose");
+const mongoose = require("mongoose");
 
-const categorySchema=new mongoose.Schema({
-    name:{
-        type:String,
+const categorySchema = new mongoose.Schema({
+    name: {
+        type: String,
         unique: [true, 'Already exist the name.'],
-        required:[true,'The field is required.']
+        required: [true, 'The field is required.']
     },
-    status:{
-        type:String,
-        default:"active"
+
+    subcategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subcategorie' }],
+    
+    status: {
+        type: String,
+        default: "active"
     }
 
-},{
-    timestamps:true
+}, {
+    timestamps: true
 })
 
-module.exports=new mongoose.model('Categorie',categorySchema)
+module.exports = new mongoose.model('Categorie', categorySchema)

@@ -1,11 +1,13 @@
 const express = require('express')
 const router = express.Router()
 const subCategoryModel = require('../models/subCategoryModel')
+const categoryModel = require('../models/categoryModel')
 
 router.post('/', async (req, res) => {
     try {
         const newSubCategoryModel = new subCategoryModel(req.body)
-        await newSubCategoryModel.save()
+        const subCategory=await newSubCategoryModel.save()
+        await categoryModel.findByIdAndUpdate(subCategory.category,{ $push: { subcategories: subCategory._id }})
         res.status(200).json({ code: 200, message: 'Successfully added.' })
     } catch (err) {
         console.log(err);
@@ -104,6 +106,16 @@ router.patch('/',async(req,res)=>{
             // Handle other errors
             console.error('err', err.message);
         }
+    }
+})
+
+//Get sub categories by category
+router.get('/matched-by-category',async(req,res)=>{
+    try {
+        const data = await subCategoryModel.find({category:req?.query?.category}).populate('category')
+        res.json(data)
+    } catch (err) {
+        console.log(err);
     }
 })
 module.exports = router

@@ -1,4 +1,4 @@
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 
 const subCategorySchema=new mongoose.Schema({
     category:{

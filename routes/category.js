@@ -39,7 +39,10 @@ router.get('/',async(req,res)=>{
         }
 
         if (!search && !req.query.page) {
-            const data=await categoryModel.find(searchValue)
+            const data=await categoryModel.find({status:'active'}).populate({
+                path:'subcategories',
+                match:{status:'active'}
+            })
            return res.json({data})
         } 
         const totalCount=await categoryModel.countDocuments()
