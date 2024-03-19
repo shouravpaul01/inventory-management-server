@@ -1,17 +1,17 @@
 const express=require('express')
+const roleModel = require('../models/roleModel')
 const router=express.Router()
-const categoryModel=require('../models/categoryModel.js')
 
 router.post('/',async(req,res)=>{
     try {
-        const newCategory=new categoryModel(req.body)
-        await newCategory.save()
+        const isSaved=new roleModel(req.body)
+        await isSaved.save()
         res.status(200).json({code:200,message:'Successfully added.'})
     } catch (err) {
         console.log(err);
         if (err.name === 'MongoServerError' && err.code === 11000) {
             console.log('2');
-            res.json({ code: 204, validationErrors: [{ field: 'name', message: 'Already exist the name.' }] })
+            res.json({ code: 204, validationErrors: [{ field: 'role', message: 'Already exist the Role.' }] })
         } else if (err.name === 'ValidationError') {
             
             // Handle validation error
@@ -26,7 +26,6 @@ router.post('/',async(req,res)=>{
         }
     }
 })
-
 router.get('/',async(req,res)=>{
     const page=Number(req?.query?.page) || 1
     const pageSize=Number(req?.query?.pageSize) || 5
@@ -35,21 +34,18 @@ router.get('/',async(req,res)=>{
     try {
         const searchValue = {}
         if (search  && req.query.page) {
-            searchValue.name = { $regex: search, $options: 'i' }
+            searchValue.role = { $regex: search, $options: 'i' }
         }
-
-        if (!search  && !req.query.page) {
-            const data=await categoryModel.find({status:true}).populate({
-                path:'subcategories',
-                match:{status:true}
-            })
-           return res.json({data})
-        } 
+        if (!search && !req.query.page) {
+            const data=await roleModel.find({})
+            return res.json(data)
+        }
+       
         console.log(searchValue);
-        const totalCount=await categoryModel.countDocuments()
+        const totalCount=await roleModel.countDocuments()
         const totalPages=Math.ceil(totalCount/pageSize)
 
-        const data=await categoryModel.find(searchValue).skip((page-1)*pageSize).limit(pageSize)
+        const data=await roleModel.find(searchValue).skip((page-1)*pageSize).limit(pageSize)
         res.json({data,totalPages})
         
     } catch (err) {
@@ -59,27 +55,16 @@ router.get('/',async(req,res)=>{
 })
 router.delete('/:_id',async(req,res)=>{
     try {
-        const result=await categoryModel.deleteOne({ _id: req.params._id })
+        await roleModel.deleteOne({ _id: req.params._id })
         res.json({message:"Successfully deleted."})
     } catch (err) {
         console.log(err);
     }
    
 })
-router.patch('/update-status', async (req, res) => {
-
-    try {
-        const result = await categoryModel.findByIdAndUpdate(req.query._id, { status: req.query.status },
-            { new: true }
-        )
-        res.status(200).json({ code: 200, message: "Successfully updated" })
-    } catch (error) {
-        console.log(error);
-    }
-})
 router.get('/edit/:_id',async(req,res)=>{
     try {
-        const result=await categoryModel.findById(req.params._id)
+        const result=await roleModel.findById(req.params._id)
         res.status(200).json(result)
         
     } catch (err) {
@@ -88,14 +73,14 @@ router.get('/edit/:_id',async(req,res)=>{
 })
 router.patch('/',async(req,res)=>{
     try {
-        await categoryModel.findByIdAndUpdate(req.body._id, { name: req.body.name },
+        await roleModel.findByIdAndUpdate(req.body._id, req.body,
             { new: true }
         )
         res.status(200).json({ code: 200, message: "Successfully updated" })
     } catch (err) {
         if (err.name === 'MongoServerError' && err.code === 11000) {
             console.log('2');
-            res.json({ code: 204, validationErrors: [{ field: 'name', message: 'Already exist the name.' }] })
+            res.json({ code: 204, validationErrors: [{ field: 'role', message: 'Already exist the name.' }] })
         } else if (err.name === 'ValidationError') {
             
             // Handle validation error

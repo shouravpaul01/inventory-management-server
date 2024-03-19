@@ -111,6 +111,7 @@ router.patch('/',async(req,res)=>{
 
 //Get sub categories by category
 router.get('/matched-by-category',async(req,res)=>{
+    console.log(req?.query?.category,'9');
     try {
         const data = await subCategoryModel.find({category:req?.query?.category}).populate('category')
         res.json(data)

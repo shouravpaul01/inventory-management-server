@@ -12,8 +12,8 @@ const subCategorySchema=new mongoose.Schema({
         unique:true
     },
     status:{
-        type:String,
-        default:'active'
+        type:Boolean,
+        default:false
     }
 
 },{

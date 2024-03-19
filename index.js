@@ -6,13 +6,22 @@ const cloudinary = require('cloudinary').v2;
 const app=express()
 const port = process.env.PORT || 3000
 
-//Import all routes
-const category=require('./routes/category')
-const subCategory=require('./routes/subCategory')
-const product=require('./routes/product')
 
 app.use(cors())
 app.use(express.json())
+
+//Import all route
+const category=require('./routes/category')
+const subCategory=require('./routes/subCategory')
+const accessory=require('./routes/accessory')
+const user=require('./routes/user')
+const jwt=require('./routes/jwt')
+const role=require('./routes/role')
+const order=require('./routes/order')
+const distributeAccessories=require('./routes/distributeAccessories')
+const returnedAccessories=require('./routes/returnedAccessories')
+
+
 
 const dbConnection=async()=>{
     await mongoose.connect(`mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.8sp76yj.mongodb.net/inventoryManagementDB?retryWrites=true&w=majority`);
@@ -29,7 +38,13 @@ cloudinary.config({
 
 app.use('/category',category)
 app.use('/sub-cat',subCategory)
-app.use('/product',product)
+app.use('/accessory',accessory)
+app.use('/user',user)
+app.use('/jwt',jwt)
+app.use('/role',role)
+app.use('/order',order)
+app.use('/distribute-accessories',distributeAccessories)
+app.use('/returned-accessories',returnedAccessories)
 
 app.get('/',(req,res)=>{
     res.send('Hello...Welcome')

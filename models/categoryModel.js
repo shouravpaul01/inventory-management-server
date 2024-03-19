@@ -10,8 +10,8 @@ const categorySchema = new mongoose.Schema({
     subcategories: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subcategorie' }],
     
     status: {
-        type: String,
-        default: "active"
+        type: Boolean,
+        default: false
     }
 
 }, {

@@ -1,8 +1,9 @@
 const express = require('express')
-const productModel = require('../models/productModel');
+const accessoryModel = require('../models/accessoryModel');
 const singleFileUpload = require('../middlewares/multer');
 const fileUploadCloudinary = require('../utils/fileUploadCloudinary');
 const deleteFileCloudinary = require('../utils/deleteFileCloudinary');
+const { generateAccessoryUniqueCode } = require('../utils/utils');
 const router = express.Router()
 
 router.post('/', singleFileUpload, async (req, res) => {
@@ -10,20 +11,28 @@ router.post('/', singleFileUpload, async (req, res) => {
 
     try {
         const data = JSON.parse(req.body.newData)
+        const accessoryCode=generateAccessoryUniqueCode(1, data.codeTitle.toUpperCase(), Number(data.quantity))
+        data['quantityDetails'] = { totalQuantity: Number(data.quantity),allCode:accessoryCode, allQuantity: { quantity: Number(data.quantity),code:accessoryCode,date: new Date() } }
+        data['currentQuantity'] = Number(data.quantity)
+        data['orderQuantity'] = 0
+       data['codeTitle']=data.codeTitle.toUpperCase()
+
+        console.log(data, 'data');
+        console.log(accessoryCode, 'accessoryCode');
         if (req.file) {
             const cloudinaryResult = await fileUploadCloudinary(req?.file?.path)
             data['image'] = { public_id: cloudinaryResult.public_id, url: cloudinaryResult.secure_url }
         }
 
 
-        const newProduct = new productModel(data)
-        await newProduct.save()
-        res.status(200).json({ code: 200, message: 'Successfully added.' })
+        const isSaved = new accessoryModel(data)
+        await isSaved.save()
+        res.status(200).json({ message: 'Successfully added.' })
     } catch (err) {
 
         if (err.name === 'MongoServerError' && err.code === 11000) {
             console.log('2');
-            res.json({ code: 204, validationErrors: [{ field: 'name', message: 'Already exist the name.' }] })
+            res.status(201).json({ validationErrors: [{ field: 'name', message: 'Already exist the name.' }] })
         } else if (err.name === 'ValidationError') {
 
             // Handle validation error
@@ -31,7 +40,7 @@ router.post('/', singleFileUpload, async (req, res) => {
                 field,
                 message: err.errors[field].message,
             }));
-            res.json({ code: 204, validationErrors: validationErrors })
+            res.status(201).json({ validationErrors: validationErrors })
         } else {
             // Handle other errors
             console.error('err', err.message);
@@ -50,14 +59,11 @@ router.get('/', async (req, res) => {
             searchValue.name = { $regex: search, $options: 'i' }
         }
 
-        // if (!search && !req.query.page) {
-        //     const data=await categoryModel.find(searchValue)
-        //    return res.json({data})
-        // } 
-        const totalCount = await productModel.countDocuments()
+
+        const totalCount = await accessoryModel.countDocuments()
         const totalPages = Math.ceil(totalCount / pageSize)
 
-        const data = await productModel.find(searchValue).skip((page - 1) * pageSize).limit(pageSize).populate('category').populate('subCategory')
+        const data = await accessoryModel.find(searchValue).skip((page - 1) * pageSize).limit(pageSize).populate('category').populate('subCategory')
         res.json({ data, totalPages })
 
     } catch (err) {
@@ -69,45 +75,42 @@ router.get('/all-active-product', async (req, res) => {
     const page = Number(req?.query?.page) || 1
     const pageSize = Number(req?.query?.pageSize) || 5
     const search = req.query.search
-    const subCategories =req.query.subCategories 
+    const subCategories = req.query.subCategories
     const categories = req.query.categories
-    const returnStatus = req.query.returnStatus
-    const categoriesArray =categories.split(',')
-    const subCategoriesArray =subCategories.split(',')
-   
+    const isItReturnable = req.query.isItReturnable
+    const categoriesArray = categories.split(',')
+    const subCategoriesArray = subCategories.split(',')
+
     try {
-        const searchValue = {}
+        const searchValue = {status:true}
         if (search) {
-            console.log('2');
             searchValue.name = { $regex: search, $options: 'i' }
-            searchValue.status='active'
-            if (returnStatus) {
-                searchValue.returnStatus=returnStatus
+            if (isItReturnable) {
+                searchValue.isItReturnable = isItReturnable
             }
             if (categories) {
-                searchValue.category={ $in: categoriesArray }
+                searchValue.category = { $in: categoriesArray }
             }
         }
         if (categories) {
             if (categories) {
-                searchValue.category={ $in: categoriesArray }
+                searchValue.category = { $in: categoriesArray }
             }
             if (subCategories) {
-                searchValue.subCategory={ $in: subCategoriesArray }
+                searchValue.subCategory = { $in: subCategoriesArray }
             }
-            if (returnStatus) {
-                searchValue.returnStatus=returnStatus
+            if (isItReturnable) {
+                searchValue.isItReturnable = isItReturnable
             }
-            searchValue.status='active'
         }
-        if (returnStatus) {
-            searchValue.returnStatus=returnStatus
-            searchValue.status='active'
+        if (isItReturnable) {
+            searchValue.isItReturnable = isItReturnable
         }
-        const totalCount = await productModel.countDocuments()
+        console.log(searchValue);
+        const totalCount = await accessoryModel.countDocuments()
         const totalPages = Math.ceil(totalCount / pageSize)
 
-        const data = await productModel.find(searchValue).skip((page - 1) * pageSize).limit(pageSize).populate('category').populate('subCategory')
+        const data = await accessoryModel.find(searchValue).skip((page - 1) * pageSize).limit(pageSize).populate('category').populate('subCategory')
         res.json({ data, totalPages })
 
     } catch (err) {
@@ -117,11 +120,11 @@ router.get('/all-active-product', async (req, res) => {
 })
 router.delete('/:_id', async (req, res) => {
     try {
-        const findProduct = await productModel.findById(req.params._id)
-        if (findProduct) {
-            await deleteFileCloudinary(findProduct.image.public_id)
+        const findAccessorie = await accessoryModel.findById(req.params._id)
+        if (findAccessorie) {
+            await deleteFileCloudinary(findAccessorie.image.public_id)
         }
-        const result = await productModel.deleteOne({ _id: req.params._id })
+        const result = await accessoryModel.deleteOne({ _id: req.params._id })
         res.json({ message: "Successfully deleted." })
     } catch (err) {
         console.log(err);
@@ -131,7 +134,7 @@ router.delete('/:_id', async (req, res) => {
 router.patch('/update-status', async (req, res) => {
 
     try {
-        const result = await productModel.findByIdAndUpdate(req.query._id, { status: req.query.status },
+        await accessoryModel.findByIdAndUpdate(req.query._id, { status: req.query.status },
             { new: true }
         )
         res.status(200).json({ code: 200, message: "Successfully updated" })
@@ -139,9 +142,37 @@ router.patch('/update-status', async (req, res) => {
         console.log(error);
     }
 })
-router.get('/edit/:_id', async (req, res) => {
+router.patch('/update-quantity', async (req, res) => {
+    const { _id, quantity } = req.query
+
     try {
-        const result = await productModel.findById(req.params._id).populate('category').populate('subCategory')
+
+        const findAccessory = await accessoryModel.findOne({ _id: _id })
+        const totalQuantity = Number(findAccessory.quantityDetails.totalQuantity)
+        const currentQuantity = Number(findAccessory.currentQuantity)
+        const formQuantity = Number(quantity)
+        const codeGenerate = generateAccessoryUniqueCode(totalQuantity, findAccessory.codeTitle, formQuantity)
+
+        //Added more quantity
+        findAccessory['quantityDetails'] = {
+            //Update Total Quantity
+            totalQuantity: totalQuantity + formQuantity,
+            allCode:[...findAccessory.quantityDetails.allCode,...codeGenerate],
+            allQuantity: [...findAccessory.quantityDetails.allQuantity, { quantity: formQuantity,code:codeGenerate, date: new Date() }]
+        }
+        //Update Current Quantity
+        findAccessory['currentQuantity'] = currentQuantity+formQuantity
+        console.log(findAccessory);
+        await findAccessory.save()
+        res.status(200).json({message: "Successfully Added More Quantity." })
+    } catch (error) {
+        console.log(error);
+    }
+})
+router.get('/edit/:_id', async (req, res) => {
+
+    try {
+        const result = await accessoryModel.findById(req.params._id).populate('category').populate('subCategory')
         res.status(200).json(result)
 
     } catch (err) {
@@ -157,14 +188,14 @@ router.patch('/', singleFileUpload, async (req, res) => {
             delete data['image']
         }
         if (file) {
-            const findData = await productModel.findById(data._id)
+            const findData = await accessoryModel.findById(data._id)
             await deleteFileCloudinary(findData?.image?.public_id)
             const cloudinaryResult = await fileUploadCloudinary(req?.file?.path)
             data['image'] = { public_id: cloudinaryResult.public_id, url: cloudinaryResult.secure_url }
 
         }
         console.log(data);
-        const result = await productModel.findOneAndUpdate({ _id: data._id }, data,
+        const result = await accessoryModel.findOneAndUpdate({ _id: data._id }, data,
             { new: true }
         )
         res.status(200).json({ code: 200, message: "Successfully updated" })
