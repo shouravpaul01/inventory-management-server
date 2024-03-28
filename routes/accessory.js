@@ -10,22 +10,22 @@ router.post('/', singleFileUpload, async (req, res) => {
 
 
     try {
-        const data = JSON.parse(req.body.newData)
-        const accessoryCode=generateAccessoryUniqueCode(1, data.codeTitle.toUpperCase(), Number(data.quantity))
-        data['quantityDetails'] = { totalQuantity: Number(data.quantity),allCode:accessoryCode, allQuantity: { quantity: Number(data.quantity),code:accessoryCode,date: new Date() } }
-        data['currentQuantity'] = Number(data.quantity)
-        data['orderQuantity'] = 0
-       data['codeTitle']=data.codeTitle.toUpperCase()
+        const formData = JSON.parse(req.body.newData)
+        const accessoryCode = formData.isItReturnable=='Yes'?generateAccessoryUniqueCode(1, formData.codeTitle.toUpperCase(), Number(formData.quantity)):[]
+        formData['quantityDetails'] = { totalQuantity: Number(formData.quantity), allCode: accessoryCode, allQuantity: { quantity: Number(formData.quantity), code: accessoryCode, date: new Date() } }
+        formData['currentQuantity'] = Number(formData.quantity)
+        formData['orderQuantity'] = 0
+        formData['codeTitle'] = formData.codeTitle.toUpperCase()
 
-        console.log(data, 'data');
+        console.log(formData, 'formData');
         console.log(accessoryCode, 'accessoryCode');
         if (req.file) {
             const cloudinaryResult = await fileUploadCloudinary(req?.file?.path)
-            data['image'] = { public_id: cloudinaryResult.public_id, url: cloudinaryResult.secure_url }
+            formData['image'] = { public_id: cloudinaryResult.public_id, url: cloudinaryResult.secure_url }
         }
 
 
-        const isSaved = new accessoryModel(data)
+        const isSaved = new accessoryModel(formData)
         await isSaved.save()
         res.status(200).json({ message: 'Successfully added.' })
     } catch (err) {
@@ -50,13 +50,19 @@ router.post('/', singleFileUpload, async (req, res) => {
 router.get('/', async (req, res) => {
     const page = Number(req?.query?.page) || 1
     const pageSize = Number(req?.query?.pageSize) || 5
+    const { fromDate, toDate } = JSON.parse(req.query.filterByDate) || { fromDate: null, toDate: null }
     const search = req.query.search
     console.log('1');
     try {
         const searchValue = {}
         if (search) {
-            console.log('2');
             searchValue.name = { $regex: search, $options: 'i' }
+        }
+        if (fromDate && toDate) {
+            searchValue.createdAt = {
+                $gte: Date.parse(fromDate),
+                $lte: Date.parse(toDate)
+            }
         }
 
 
@@ -82,7 +88,7 @@ router.get('/all-active-product', async (req, res) => {
     const subCategoriesArray = subCategories.split(',')
 
     try {
-        const searchValue = {status:true}
+        const searchValue = { status: true }
         if (search) {
             searchValue.name = { $regex: search, $options: 'i' }
             if (isItReturnable) {
@@ -157,14 +163,14 @@ router.patch('/update-quantity', async (req, res) => {
         findAccessory['quantityDetails'] = {
             //Update Total Quantity
             totalQuantity: totalQuantity + formQuantity,
-            allCode:[...findAccessory.quantityDetails.allCode,...codeGenerate],
-            allQuantity: [...findAccessory.quantityDetails.allQuantity, { quantity: formQuantity,code:codeGenerate, date: new Date() }]
+            allCode: [...findAccessory.quantityDetails.allCode, ...codeGenerate],
+            allQuantity: [...findAccessory.quantityDetails.allQuantity, { quantity: formQuantity, code: codeGenerate, date: new Date() }]
         }
         //Update Current Quantity
-        findAccessory['currentQuantity'] = currentQuantity+formQuantity
-        console.log(findAccessory);
+        findAccessory['currentQuantity'] = currentQuantity + formQuantity
+
         await findAccessory.save()
-        res.status(200).json({message: "Successfully Added More Quantity." })
+        res.status(200).json({ message: "Successfully Added More Quantity." })
     } catch (error) {
         console.log(error);
     }

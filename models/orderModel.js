@@ -31,6 +31,11 @@ const orderSchema = new mongoose.Schema({
             quantity: {
                 type: Number
             },
+            allCode:[
+                {
+                    type:String
+                }
+            ],
             deadline: {
                 type: Date
             },
@@ -56,9 +61,17 @@ const orderSchema = new mongoose.Schema({
             }
         }
     ],
-    approveStatus: {
-        type: Boolean,
-        default: false
+    approve: {
+        status:{
+            type: Boolean,
+        },
+        email:{
+            type:String
+        },
+        date:{
+            type:Date
+        }
+       
     },
     recievedOrder: {
         status: {

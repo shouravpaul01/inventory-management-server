@@ -55,7 +55,7 @@ const accessorySchema = new mongoose.Schema({
     orderQuantity: {
         type: Number,
     },
-    distributeQuantity: {
+    distributedQuantity: {
         type: Number,
     },
     codeTitle:{

@@ -18,7 +18,7 @@ const user=require('./routes/user')
 const jwt=require('./routes/jwt')
 const role=require('./routes/role')
 const order=require('./routes/order')
-const distributeAccessories=require('./routes/distributeAccessories')
+const distributedAccessories=require('./routes/distributeAccessories')
 const returnedAccessories=require('./routes/returnedAccessories')
 
 
@@ -43,7 +43,7 @@ app.use('/user',user)
 app.use('/jwt',jwt)
 app.use('/role',role)
 app.use('/order',order)
-app.use('/distribute-accessories',distributeAccessories)
+app.use('/distributed-accessories',distributedAccessories)
 app.use('/returned-accessories',returnedAccessories)
 
 app.get('/',(req,res)=>{
